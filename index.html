@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERC20 Token Transfer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 400px;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .input-group {
+            margin: 15px 0;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        .input-group input {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .input-group input:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        #walletInfo {
+            margin: 15px 0;
+            text-align: left;
+            color: #555;
+        }
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 1100px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.4.6/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>ERC20 Token Transfer</h1>
+        <button id="connectButton" class="button">Connect MetaMask</button>
+        <button id="disconnectButton" class="button" style="display: none;">Disconnect</button>
+        <div id="walletInfo" style="display: none;">
+            <p id="walletAddress"></p>
+            <p id="tokenBalance"></p>
+        </div>
+        <div class="input-group">
+            <label for="recipient">Recipient Address:</label>
+            <input type="text" id="recipient" placeholder="0xRecipientAddress">
+        </div>
+        <div class="input-group">
+            <label for="amount">Amount:</label>
+            <input type="text" id="amount" placeholder="10">
+        </div>
+        <button id="transferButton" class="button" disabled>Transfer Tokens</button>
+    </div>
+
+    <!-- The Modal -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Transfer Successful</h2>
+            <p id="txHash"></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const tokenAddress = "0xF28BC1337898ca40BdaFacE3f1322feFA811A90F"; // Your token contract address
+            const abi = [
+                {
+                    "constant": false,
+                    "inputs": [
+                        { "name": "_to", "type": "address" },
+                        { "name": "_value", "type": "uint256" }
+                    ],
+                    "name": "transfer",
+                    "outputs": [{ "name": "", "type": "bool" }],
+                    "type": "function"
+                },
+                {
+                    "constant": true,
+                    "inputs": [{ "name": "_owner", "type": "address" }],
+                    "name": "balanceOf",
+                    "outputs": [{ "name": "balance", "type": "uint256" }],
+                    "type": "function"
+                }
+            ];
+
+            let provider;
+            let signer;
+
+            document.getElementById('connectButton').onclick = async () => {
+                if (typeof window.ethereum !== 'undefined') {
+                    try {
+                        console.log("Requesting MetaMask connection...");
+                        await ethereum.request({ method: 'eth_requestAccounts' });
+                        provider = new ethers.providers.Web3Provider(window.ethereum);
+                        signer = provider.getSigner();
+
+                        const address = await signer.getAddress();
+                        const contract = new ethers.Contract(tokenAddress, abi, signer);
+                        const tokenBalance = await contract.balanceOf(address);
+
+                        document.getElementById('walletAddress').innerText = `Address: ${address}`;
+                        document.getElementById('tokenBalance').innerText = `Token Balance: ${ethers.utils.formatUnits(tokenBalance, 18)} TK`;
+                        document.getElementById('walletInfo').style.display = 'block';
+
+                        document.getElementById('connectButton').style.display = 'none';
+                        document.getElementById('disconnectButton').style.display = 'inline-block';
+                        document.getElementById('transferButton').disabled = false;
+                    } catch (error) {
+                        if (error.code === 4001) {
+                            console.error('User rejected the request');
+                        } else {
+                            console.error('Error connecting to MetaMask:', error);
+                        }
+                    }
+                } else {
+                    alert('MetaMask is not installed');
+                }
+            };
+
+            document.getElementById('disconnectButton').onclick = () => {
+                provider = null;
+                signer = null;
+
+                document.getElementById('walletAddress').innerText = '';
+                document.getElementById('tokenBalance').innerText = '';
+                document.getElementById('walletInfo').style.display = 'none';
+
+                document.getElementById('connectButton').style.display = 'inline-block';
+                document.getElementById('disconnectButton').style.display = 'none';
+                document.getElementById('transferButton').disabled = true;
+            };
+
+            document.getElementById('transferButton').onclick = async () => {
+                const recipient = document.getElementById('recipient').value;
+                const amount = document.getElementById('amount').value;
+
+                if (recipient && amount) {
+                    const contract = new ethers.Contract(tokenAddress, abi, signer);
+
+                    try {
+                        const transferAmount = ethers.utils.parseUnits(amount, 18);
+                        console.log(`Transferring ${amount} tokens to ${recipient}...`);
+                        const tx = await contract.transfer(recipient, transferAmount);
+                        console.log('Transaction sent:', tx.hash);
+                        await tx.wait();
+                        console.log('Transfer successful:', tx);
+
+                        // Show modal with transaction hash
+                        document.getElementById('txHash').innerText = `Transaction Hash: ${tx.hash}`;
+                        const modal = document.getElementById('myModal');
+                        modal.style.display = 'block';
+
+                        // Update the token balance after transfer
+                        const address = await signer.getAddress();
+                        const tokenBalance = await contract.balanceOf(address);
+                        document.getElementById('tokenBalance').innerText = `Token Balance: ${ethers.utils.formatUnits(tokenBalance, 18)} CTK`;
+                    } catch (error) {
+                        console.error('Transfer failed:', error);
+                    }
+                } else {
+                    alert('Please enter recipient address and amount');
+                }
+            };
+
+            // Close the modal
+            document.querySelector('.close').onclick = function() {
+                const modal = document.getElementById('myModal');
+                modal.style.display = 'none';
+            };
+
+            // Close the modal when clicking outside of it
+            window.onclick = function(event) {
+                const modal = document.getElementById('myModal');
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            };
+        });
+    </script>
+</body>
+</html>
