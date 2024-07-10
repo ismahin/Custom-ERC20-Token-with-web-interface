@@ -8,6 +8,9 @@ This project involves deploying a custom ERC20 token on the Ethereum blockchain 
 1. **Deploying the Custom ERC20 Token**
 2. **Creating a Web Interface for Token Transfer**
 
+![image](https://github.com/ismahin/Custom-ERC20-Token-with-web-interface/assets/87686970/57cc4826-dae9-4770-9fc7-ffd77705c858)
+
+
 ## Part 1: Deploying the Custom ERC20 Token
 
 To deploy your own ERC20 token, follow these steps:
